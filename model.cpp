@@ -124,34 +124,58 @@ void Model::processSeed(int n, int cellx, int cellz) {
 }
 
 void Model::generateCorridor(DoorPoints& p1, DoorPoints& p2) {
-    // Necesitamos 8 vértices para un pasillo (suelo y dos paredes)
-    // El orden de los vértices es importante para las normales (que no se vea transparente)
-    
     unsigned int offset = local_vertices.size() / 5;
 
-    // Vértices del Cuarto 1 (Inicio)
-    local_vertices.insert(local_vertices.end(), { p1.infIzq.x, p1.infIzq.y, p1.infIzq.z, 0.0f, 0.0f }); // 0
-    local_vertices.insert(local_vertices.end(), { p1.supIzq.x, p1.supIzq.y, p1.supIzq.z, 0.0f, 2.0f }); // 1
-    local_vertices.insert(local_vertices.end(), { p1.infDer.x, p1.infDer.y, p1.infDer.z, 2.0f, 0.0f }); // 2
-    local_vertices.insert(local_vertices.end(), { p1.supDer.x, p1.supDer.y, p1.supDer.z, 2.0f, 2.0f }); // 3
+    // 1. DETERMINAR DIRECCIÓN Y PROYECCIÓN
+    // Si la diferencia en X es muy pequeña, el pasillo va en el eje Z (Norte/Sur)
+    // Si la diferencia en Z es muy pequeña, el pasillo va en el eje X (Este/Oeste)
+    bool isVertical = std::abs(p1.infIzq.x - p1.infDer.x) > std::abs(p1.infIzq.z - p1.infDer.z);
+    
+    // 2. NORMALIZAR ANCHO (Evitar el efecto embudo)
+    // Calculamos el ancho de ambas puertas y nos quedamos con el máximo
+    float ancho1 = isVertical ? std::abs(p1.infIzq.x - p1.infDer.x) : std::abs(p1.infIzq.z - p1.infDer.z);
+    float ancho2 = isVertical ? std::abs(p2.infIzq.x - p2.infDer.x) : std::abs(p2.infIzq.z - p2.infDer.z);
+    float anchoMax = std::max(ancho1, ancho2);
 
-    // Vértices del Cuarto 2 (Fin)
-    local_vertices.insert(local_vertices.end(), { p2.infIzq.x, p2.infIzq.y, p2.infIzq.z, 5.0f, 0.0f }); // 4
-    local_vertices.insert(local_vertices.end(), { p2.supIzq.x, p2.supIzq.y, p2.supIzq.z, 5.0f, 2.0f }); // 5
-    local_vertices.insert(local_vertices.end(), { p2.infDer.x, p2.infDer.y, p2.infDer.z, 7.0f, 0.0f }); // 6
-    local_vertices.insert(local_vertices.end(), { p2.supDer.x, p2.supDer.y, p2.supDer.z, 7.0f, 2.0f }); // 7
+    // Re-calculamos puntos de p1 (inicio) basados en el ancho máximo centrado
+    glm::vec3 centroP1 = (p1.infIzq + p1.infDer) * 0.5f;
+    glm::vec3 p1_L = centroP1;
+    glm::vec3 p1_R = centroP1;
 
-    // Índices para formar los rectángulos (Triángulos)
+    // Re-calculamos puntos de p2 (fin) basados en el mismo ancho máximo
+    glm::vec3 centroP2 = (p2.infIzq + p2.infDer) * 0.5f;
+    glm::vec3 p2_L = centroP2;
+    glm::vec3 p2_R = centroP2;
+
+    if (isVertical) {
+        p1_L.x -= anchoMax * 0.5f; p1_R.x += anchoMax * 0.5f;
+        p2_L.x -= anchoMax * 0.5f; p2_R.x += anchoMax * 0.5f;
+    } else {
+        p1_L.z -= anchoMax * 0.5f; p1_R.z += anchoMax * 0.5f;
+        p2_L.z -= anchoMax * 0.5f; p2_R.z += anchoMax * 0.5f;
+    }
+
+    float h = p1.supIzq.y; // Usamos la altura de la puerta
+
+    // 3. INSERTAR VÉRTICES (4 del inicio, 4 del fin proyectado)
+    // Inicio (Cuarto actual)
+    local_vertices.insert(local_vertices.end(), { p1_L.x, 0.0f, p1_L.z, 0.0f, 0.0f }); // 0: infIzq
+    local_vertices.insert(local_vertices.end(), { p1_L.x, h,    p1_L.z, 0.0f, 2.0f }); // 1: supIzq
+    local_vertices.insert(local_vertices.end(), { p1_R.x, 0.0f, p1_R.z, 2.0f, 0.0f }); // 2: infDer
+    local_vertices.insert(local_vertices.end(), { p1_R.x, h,    p1_R.z, 2.0f, 2.0f }); // 3: supDer
+
+    // Fin (Proyectado al vecino)
+    local_vertices.insert(local_vertices.end(), { p2_L.x, 0.0f, p2_L.z, 5.0f, 0.0f }); // 4
+    local_vertices.insert(local_vertices.end(), { p2_L.x, h,    p2_L.z, 5.0f, 2.0f }); // 5
+    local_vertices.insert(local_vertices.end(), { p2_R.x, 0.0f, p2_R.z, 7.0f, 0.0f }); // 6
+    local_vertices.insert(local_vertices.end(), { p2_R.x, h,    p2_R.z, 7.0f, 2.0f }); // 7
+
+    // 4. ÍNDICES (Suelo y Paredes)
     std::vector<unsigned int> corridorIndices = {
-        // Suelo (Uniendo infIzq1, infDer1, infDer2, infIzq2)
-        0, 2, 6, 6, 4, 0,
-        // Pared Izquierda
-        0, 4, 5, 5, 1, 0,
-        // Pared Derecha
-        2, 3, 7, 7, 6, 2
+        0, 2, 6, 6, 4, 0, // Suelo
+        0, 4, 5, 5, 1, 0, // Pared Izquierda
+        2, 3, 7, 7, 6, 2  // Pared Derecha
     };
 
-    for(unsigned int idx : corridorIndices) {
-        local_indices.push_back(idx + offset);
-    }
+    for(unsigned int idx : corridorIndices) local_indices.push_back(idx + offset);
 }
