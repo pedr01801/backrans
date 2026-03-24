@@ -2,14 +2,20 @@
 #define MODEL_H
 
 #include <vector>
+#include <glm/glm.hpp>
+#include <map>
 
 bool connectRight(int x, int z);
 bool connectUp(int x, int z);
 
+struct DoorPoints {
+    glm::vec3 infIzq, supIzq, infDer, supDer;
+};
 
 class Model {
 public:
     int w, h, d;
+    std::map<int, DoorPoints> doorData;
     float* vertices;
     unsigned int* indices;
     size_t sizeVertices;
@@ -21,7 +27,16 @@ public:
 
     Model();
     void processSeed(int seed, int cellx, int cellz);
+    void Model::generateCorridor(DoorPoints& p1, DoorPoints& p2);
 
+    // Agrega esto para poder refrescar los punteros después de añadir el pasillo
+    void updatePointers() {
+        vertices = local_vertices.data();
+        indices = local_indices.data();
+        sizeVertices = local_vertices.size() * sizeof(float);
+        sizeIndices = local_indices.size() * sizeof(unsigned int);
+        indicesAmount = local_indices.size();
+    }
 };
 
 #endif
