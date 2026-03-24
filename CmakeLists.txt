@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(GAME)
+
+add_executable(Program
+    main.cpp
+    glad.c
+    model.cpp
+)
+
+target_include_directories(Program PRIVATE
+    ${CMAKE_SOURCE_DIR}/Libraries/includes
+)
+
+target_link_libraries(Program PRIVATE
+    ${CMAKE_SOURCE_DIR}/Libraries/lib/glfw3.lib
+    opengl32
+)

@@ -1,0 +1,27 @@
+1. El "Escalador" de Cuartos (Nivel Básico)
+En lugar de que la semilla defina la forma, define las proporciones.
+
+La idea: La semilla es un número (ej. 12345). Usas ese número para alimentar una función matemática simple que devuelva tres valores: largo, ancho y alto.
+
+Resultado: Con una semilla el cuarto es un pasillo estrecho y alto; con otra es un salón gigante y aplastado. Los vértices en tu room.cpp ya no serían 5.0f, sino variables calculadas.
+
+2. El "Arquitecto de Piezas" (Nivel Intermedio)
+Imagina que tu cuarto no es una sola caja, sino un conjunto de módulos prefabricados.
+
+La idea: Diseñas 3 o 4 tipos de secciones (un rincón, una pared con ventana, una columna, un pasillo). La semilla decide el orden en que se "pegan" estas piezas.
+
+Resultado: Puedes generar una estructura en forma de "L", de "T" o una habitación con una columna en el medio, simplemente conectando los puntos.
+
+3. "Pintura por Números" (Texturizado Procedimental)
+Usa la semilla para decidir la estética, no solo la forma.
+
+La idea: La semilla elige entre diferentes "biomas" o sets de texturas. Si el número es par, usa pared_ladrillo.jpg; si es impar, pared_metal.jpg.
+
+Evolución: También podrías usar la semilla para cambiar el color ambiental (ambientStrength) que mencionamos antes, haciendo que unas semillas generen cuartos oscuros y otras cuartos muy brillantes.
+
+4. Laberinto de "Backrooms" (Ligas Mayores)
+Si quieres honorar el nombre de tu proyecto (Backrans), podrías pensar en cuadrículas.
+
+La idea: Imagina un tablero de ajedrez gigante. La semilla decide en qué casillas hay paredes y en cuáles hay espacio vacío.
+
+Técnica: Se suelen usar algoritmos como el Ruido de Perlin (Perlin Noise) o Autómatas Celulares. La semilla genera un "mapa de calor" y donde el valor es alto, el motor construye una pared.
