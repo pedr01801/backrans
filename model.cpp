@@ -1,6 +1,7 @@
 #include <iostream>
 #include "model.h"
 #include "seeder.h"
+#include <algorithm>
 
 Model::Model() {
     vertices = nullptr;
@@ -23,7 +24,6 @@ bool connectUp(int x, int z){
     return (hash3(x, z, 1) % 100) < 40;
 }
 
-
 void Model::processSeed(int n, int cellx, int cellz) {
     std::srand(n);
     Seeder sd;
@@ -45,22 +45,19 @@ void Model::processSeed(int n, int cellx, int cellz) {
         unsigned int offset = local_vertices.size() / 5;
 
         if (i < 4 && door[i]) {
-            // CAPTURA DE VÉRTICES PARA EL PASILLO (Ingeniería de puntos internos)
-            // Calculamos los 4 puntos internos que dan al hueco de la puerta
+            // --- GEOMETRÍA CON PUERTA ---
             DoorPoints points;
-            float worldX, worldZ;
-            
-            // Altura del dintel según tu código (ly 0.1 local + 0.5 offset = 0.6 real)
             float doorH = 0.6f * h; 
-
+            
+            // Definición de puntos para DoorData (usado por los pasillos)
             if (i == 0 || i == 1) { // Paredes en X
-                worldX = (i == 0) ? w/2.0f : -w/2.0f;
+                float worldX = (i == 0) ? w/2.0f : -w/2.0f;
                 points.infIzq = glm::vec3(worldX, 0.0f, -0.2f * d);
                 points.supIzq = glm::vec3(worldX, doorH, -0.2f * d);
                 points.infDer = glm::vec3(worldX, 0.0f,  0.2f * d);
                 points.supDer = glm::vec3(worldX, doorH,  0.2f * d);
             } else { // Paredes en Z
-                worldZ = (i == 2) ? d/2.0f : -d/2.0f;
+                float worldZ = (i == 2) ? d/2.0f : -d/2.0f;
                 points.infIzq = glm::vec3(-0.2f * w, 0.0f, worldZ);
                 points.supIzq = glm::vec3(-0.2f * w, doorH, worldZ);
                 points.infDer = glm::vec3( 0.2f * w, 0.0f, worldZ);
@@ -68,7 +65,7 @@ void Model::processSeed(int n, int cellx, int cellz) {
             }
             doorData[i] = points;
 
-            // --- GEOMETRÍA DEL MARCO (Tu código de 12 vértices) ---
+            // Vértices del marco (12 vértices para dejar el hueco)
             float marco[] = {
                 -0.5f, -0.5f, 0.0f,    0.0f, 0.0f,
                 -0.2f, -0.5f, 0.0f,    0.3f, 0.0f,
@@ -89,10 +86,10 @@ void Model::processSeed(int n, int cellx, int cellz) {
                 float vx, vy, vz, u, v;
                 vy = (ly + 0.5f) * h;
                 v = vy / 5.0f;
-                if (i == 0) { vx = w/2.0f; vz = lx*d; u = (lx*d)/5.0f; }
+                if (i == 0)      { vx =  w/2.0f; vz =  lx*d; u = (lx*d)/5.0f; }
                 else if (i == 1) { vx = -w/2.0f; vz = -lx*d; u = (lx*d)/5.0f; }
-                else if (i == 2) { vx = -lx*w; vz = d/2.0f; u = (lx*w)/5.0f; }
-                else { vx = lx*w; vz = -d/2.0f; u = (lx*w)/5.0f; }
+                else if (i == 2) { vx = -lx*w;   vz =  d/2.0f; u = (lx*w)/5.0f; }
+                else             { vx =  lx*w;   vz = -d/2.0f; u = (lx*w)/5.0f; }
                 local_vertices.insert(local_vertices.end(), {vx, vy, vz, u, v});
             }
             unsigned int mInd[] = { 0,1,2, 2,3,0, 4,5,6, 6,7,4, 8,9,10, 10,11,8 };
@@ -104,18 +101,30 @@ void Model::processSeed(int n, int cellx, int cellz) {
                 float lx = (j == 1 || j == 2) ? 0.5f : -0.5f;
                 float ly = (j == 2 || j == 3) ? 0.5f : -0.5f;
                 float vx, vy, vz, u, v;
-                if (i == 0) { vx = w/2.0f; vy = (ly+0.5f)*h; vz = lx*d; u = (lx*d)/5.0f; v = vy/5.0f; }
-                else if (i == 1) { vx = -w/2.0f; vy = (ly+0.5f)*h; vz = -lx*d; u = (lx*d)/5.0f; v = vy/5.0f; }
-                else if (i == 2) { vx = -lx*w; vy = (ly+0.5f)*h; vz = d/2.0f; u = (lx*w)/5.0f; v = vy/5.0f; }
-                else if (i == 3) { vx = lx*w; vy = (ly+0.5f)*h; vz = -d/2.0f; u = (lx*w)/5.0f; v = vy/5.0f; }
-                else if (i == 4) { vx = lx*w; vy = 0.0f; vz = ly*d; u = (lx*w)/5.0f; v = (ly*d)/5.0f; }
-                else { vx = lx*w; vy = h; vz = ly*d; u = (lx*w)/5.0f; v = (ly*d)/5.0f; }
+
+                if (i == 0)      { vx =  w/2.0f; vy = (ly+0.5f)*h; vz =  lx*d; }
+                else if (i == 1) { vx = -w/2.0f; vy = (ly+0.5f)*h; vz = -lx*d; }
+                else if (i == 2) { vx = -lx*w;   vy = (ly+0.5f)*h; vz =  d/2.0f; }
+                else if (i == 3) { vx =  lx*w;   vy = (ly+0.5f)*h; vz = -d/2.0f; }
+                else if (i == 4) { vx =  lx*w;   vy = 0.0f;        vz =  ly*d; } // SUELO
+                else             { vx =  lx*w;   vy = h;           vz =  ly*d; } // TECHO
+
+                u = (i < 4) ? (lx* ( (i<2)?d:w ) )/5.0f : (lx*w)/5.0f;
+                v = (i < 4) ? vy/5.0f : (ly*d)/5.0f;
+                
                 local_vertices.insert(local_vertices.end(), {vx, vy, vz, u, v});
             }
-            local_indices.insert(local_indices.end(), {offset+0, offset+1, offset+2, offset+2, offset+3, offset+0});
+
+            // Invertimos el orden de índices para el TECHO (i=5) para que mire hacia abajo
+            if (i == 5) {
+                local_indices.insert(local_indices.end(), {offset+0, offset+2, offset+1, offset+2, offset+0, offset+3});
+            } else {
+                local_indices.insert(local_indices.end(), {offset+0, offset+1, offset+2, offset+2, offset+3, offset+0});
+            }
         }
     }
-    // ... actualización de punteros final (igual que antes) ...
+    
+    // Sincronización final de punteros
     vertices = local_vertices.data();
     indices = local_indices.data();
     sizeVertices = local_vertices.size() * sizeof(float);
@@ -126,26 +135,19 @@ void Model::processSeed(int n, int cellx, int cellz) {
 void Model::generateCorridor(DoorPoints& p1, DoorPoints& p2) {
     unsigned int offset = local_vertices.size() / 5;
 
-    // 1. DETERMINAR DIRECCIÓN Y PROYECCIÓN
-    // Si la diferencia en X es muy pequeña, el pasillo va en el eje Z (Norte/Sur)
-    // Si la diferencia en Z es muy pequeña, el pasillo va en el eje X (Este/Oeste)
+    // 1. Detectar orientación basándose en la apertura de la puerta
     bool isVertical = std::abs(p1.infIzq.x - p1.infDer.x) > std::abs(p1.infIzq.z - p1.infDer.z);
     
-    // 2. NORMALIZAR ANCHO (Evitar el efecto embudo)
-    // Calculamos el ancho de ambas puertas y nos quedamos con el máximo
+    // 2. Normalizar Ancho (Usar el mayor de los dos para evitar embudos)
     float ancho1 = isVertical ? std::abs(p1.infIzq.x - p1.infDer.x) : std::abs(p1.infIzq.z - p1.infDer.z);
     float ancho2 = isVertical ? std::abs(p2.infIzq.x - p2.infDer.x) : std::abs(p2.infIzq.z - p2.infDer.z);
     float anchoMax = std::max(ancho1, ancho2);
 
-    // Re-calculamos puntos de p1 (inicio) basados en el ancho máximo centrado
     glm::vec3 centroP1 = (p1.infIzq + p1.infDer) * 0.5f;
-    glm::vec3 p1_L = centroP1;
-    glm::vec3 p1_R = centroP1;
-
-    // Re-calculamos puntos de p2 (fin) basados en el mismo ancho máximo
     glm::vec3 centroP2 = (p2.infIzq + p2.infDer) * 0.5f;
-    glm::vec3 p2_L = centroP2;
-    glm::vec3 p2_R = centroP2;
+
+    glm::vec3 p1_L = centroP1, p1_R = centroP1;
+    glm::vec3 p2_L = centroP2, p2_R = centroP2;
 
     if (isVertical) {
         p1_L.x -= anchoMax * 0.5f; p1_R.x += anchoMax * 0.5f;
@@ -155,27 +157,28 @@ void Model::generateCorridor(DoorPoints& p1, DoorPoints& p2) {
         p2_L.z -= anchoMax * 0.5f; p2_R.z += anchoMax * 0.5f;
     }
 
-    float h = p1.supIzq.y; // Usamos la altura de la puerta
+    float hCorridor = p1.supIzq.y;
 
-    // 3. INSERTAR VÉRTICES (4 del inicio, 4 del fin proyectado)
-    // Inicio (Cuarto actual)
-    local_vertices.insert(local_vertices.end(), { p1_L.x, 0.0f, p1_L.z, 0.0f, 0.0f }); // 0: infIzq
-    local_vertices.insert(local_vertices.end(), { p1_L.x, h,    p1_L.z, 0.0f, 2.0f }); // 1: supIzq
-    local_vertices.insert(local_vertices.end(), { p1_R.x, 0.0f, p1_R.z, 2.0f, 0.0f }); // 2: infDer
-    local_vertices.insert(local_vertices.end(), { p1_R.x, h,    p1_R.z, 2.0f, 2.0f }); // 3: supDer
+    // 3. Vértices (Suelo y Techo del pasillo incluidos)
+    // Inicio pasillo (0-3)
+    local_vertices.insert(local_vertices.end(), { p1_L.x, 0.0f,      p1_L.z, 0.0f, 0.0f }); // 0
+    local_vertices.insert(local_vertices.end(), { p1_L.x, hCorridor, p1_L.z, 0.0f, 2.0f }); // 1
+    local_vertices.insert(local_vertices.end(), { p1_R.x, 0.0f,      p1_R.z, 2.0f, 0.0f }); // 2
+    local_vertices.insert(local_vertices.end(), { p1_R.x, hCorridor, p1_R.z, 2.0f, 2.0f }); // 3
 
-    // Fin (Proyectado al vecino)
-    local_vertices.insert(local_vertices.end(), { p2_L.x, 0.0f, p2_L.z, 5.0f, 0.0f }); // 4
-    local_vertices.insert(local_vertices.end(), { p2_L.x, h,    p2_L.z, 5.0f, 2.0f }); // 5
-    local_vertices.insert(local_vertices.end(), { p2_R.x, 0.0f, p2_R.z, 7.0f, 0.0f }); // 6
-    local_vertices.insert(local_vertices.end(), { p2_R.x, h,    p2_R.z, 7.0f, 2.0f }); // 7
+    // Fin pasillo (proyectado 4-7)
+    local_vertices.insert(local_vertices.end(), { p2_L.x, 0.0f,      p2_L.z, 6.0f, 0.0f }); // 4
+    local_vertices.insert(local_vertices.end(), { p2_L.x, hCorridor, p2_L.z, 6.0f, 2.0f }); // 5
+    local_vertices.insert(local_vertices.end(), { p2_R.x, 0.0f,      p2_R.z, 8.0f, 0.0f }); // 6
+    local_vertices.insert(local_vertices.end(), { p2_R.x, hCorridor, p2_R.z, 8.0f, 2.0f }); // 7
 
-    // 4. ÍNDICES (Suelo y Paredes)
-    std::vector<unsigned int> corridorIndices = {
+    // 4. Índices (Suelo, Paredes y Techo del pasillo)
+    std::vector<unsigned int> ind = {
         0, 2, 6, 6, 4, 0, // Suelo
-        0, 4, 5, 5, 1, 0, // Pared Izquierda
-        2, 3, 7, 7, 6, 2  // Pared Derecha
+        1, 5, 7, 7, 3, 1, // Techo (mirando abajo)
+        0, 4, 5, 5, 1, 0, // Pared Izq
+        2, 3, 7, 7, 6, 2  // Pared Der
     };
 
-    for(unsigned int idx : corridorIndices) local_indices.push_back(idx + offset);
+    for(unsigned int i : ind) local_indices.push_back(i + offset);
 }
