@@ -1,5 +1,5 @@
-#define STB_IMAGE_STATIC
-#define STB_IMAGE_IMPLEMENTATION
+#ifndef TEXTURE_H    
+#define TEXTURE_H     
 #include <std/stb_image.h>
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -39,3 +39,5 @@ class Texture
         }
         
 };
+
+#endif

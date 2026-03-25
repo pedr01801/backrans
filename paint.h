@@ -1,3 +1,6 @@
+#ifndef PAINT_H     
+#define PAINT_H      
+
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
 #include <glm/glm.hpp>
@@ -64,3 +67,5 @@ class Paint {
             glDeleteBuffers(1, &EBO);
         }
 };
+
+#endif

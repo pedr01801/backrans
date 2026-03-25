@@ -10,6 +10,9 @@
     <ClCompile Include="C:\Users\pscar\Documents\codePersonal\backrans\model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\pscar\Documents\codePersonal\backrans\stb_image_impl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\pscar\Documents\codePersonal\backrans\CMakeLists.txt" />

@@ -6,6 +6,7 @@ add_executable(Program
     main.cpp
     glad.c
     model.cpp
+    stb_image_impl.cpp
 )
 
 target_include_directories(Program PRIVATE

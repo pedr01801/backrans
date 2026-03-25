@@ -371,6 +371,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\pscar\Documents\codePersonal\backrans\main.cpp" />
     <ClCompile Include="C:\Users\pscar\Documents\codePersonal\backrans\glad.c" />
     <ClCompile Include="C:\Users\pscar\Documents\codePersonal\backrans\model.cpp" />
+    <ClCompile Include="C:\Users\pscar\Documents\codePersonal\backrans\stb_image_impl.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

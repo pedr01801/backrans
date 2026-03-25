@@ -5,6 +5,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
 #include "paint.h"
 #include "camera.h"
 #include "model.h"
@@ -12,129 +13,63 @@
 
 int SCR_WIDTH = 800; int SCR_HEIGHT = 800;
 bool firstMouse = true; float xlast = 0, ylast = 0, dt = 0, lastFrame = 0;
+
+// Declaraciones de funciones de GLFW
 GLFWwindow *start(int width, int height, const char* title);
 void processKeyboardInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void loadChunk(GLFWwindow *window);
 
-struct Coordenada {
-    int x, z;
-    bool operator < (const Coordenada& other) const {
-        if (x != other.x) return x < other.x;
-        return z < other.z;
-    }
-};
-
-std::map<Coordenada, Paint*> mundialMap; 
-Camera cam; Shader* wallShader; Texture* wallTexture;
+// Variables globales necesarias para la cámara y el renderizado básico
+Camera cam; 
+Shader* wallShader; 
+Texture* wallTexture;
 
 int main() {   
-    GLFWwindow* window = start(SCR_WIDTH, SCR_HEIGHT, "Backrooms - 2 Doors Min");
+    // Inicialización de ventana
+    GLFWwindow* window = start(SCR_WIDTH, SCR_HEIGHT, "Backrooms - ChunkLoader Class");
     if (!window) return -1;
+
+    // Carga de recursos
     wallShader = new Shader("3.3.shader.vs", "3.3.shader.fs");
     wallTexture = new Texture("pared.jpg", wallShader);
-    chunkLoader *chunki = new chunkLoader(wallShader, wallTexture, cam);
+
+    // INSTANCIA DE LA CLASE: Aquí creamos el gestor de niveles
+    chunkLoader *chunki = new chunkLoader(wallShader, wallTexture);
 
     while(!glfwWindowShouldClose(window)) {
-        float currentFrame = glfwGetTime(); dt = currentFrame - lastFrame; lastFrame = currentFrame;
+        // Cálculo del Delta Time
+        float currentFrame = glfwGetTime(); 
+        dt = currentFrame - lastFrame; 
+        lastFrame = currentFrame;
+
+        // Renderizado
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         wallShader->use();
         glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/SCR_HEIGHT, 0.1f, 1000.0f);
         wallShader->setMat4("projection", proj);
         wallShader->setMat4("view", cam.getViewMatrix());
-        loadChunk(window);
+
+        // --- USO DE LA CLASE ---
+        // Llamamos al método de la clase pasando la cámara actual
+        chunki->loadChunk(window, cam);
+
         processKeyboardInput(window);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    delete chunki;
 
+    // Limpieza
+    delete chunki;
+    delete wallShader;
+    delete wallTexture;
+
+    glfwTerminate();
     return 0;
 }
 
-void loadChunk(GLFWwindow *window) {
-    float escala = 45.0f;
-    int cellx = (int)floor(cam.position.x / escala), cellz = (int)floor(cam.position.z / escala), radio = 2;
-
-    static int lastCellX = -99999, lastCellZ = -99999;
-    if (lastCellX != -99999) {
-        if (cellx > lastCellX) {
-             int badX = lastCellX + radio;
-             for (auto it = mundialMap.begin(); it != mundialMap.end(); ) {
-                 if (it->first.x == badX) {
-                     delete it->second;
-                     it = mundialMap.erase(it);
-                 } else ++it;
-             }
-        }
-        if (cellz > lastCellZ) {
-             int badZ = lastCellZ + radio;
-             for (auto it = mundialMap.begin(); it != mundialMap.end(); ) {
-                 if (it->first.z == badZ) {
-                     delete it->second;
-                     it = mundialMap.erase(it);
-                 } else ++it;
-             }
-        }
-    }
-    lastCellX = cellx; lastCellZ = cellz;
-
-    std::map<Coordenada, Model*> tempModels;
-
-    // FASE 1: Crear modelos lógicos
-    for (int x = cellx - radio; x <= cellx + radio; x++) {
-        for (int z = cellz - radio; z <= cellz + radio; z++) {
-            Coordenada c = {x, z};
-            Model* m = new Model();
-            m->processSeed(10 + x * 10 + z, x, z);
-            tempModels[c] = m;
-        }
-    }
-
-    // FASE 2: Conectar
-    for (int x = cellx - radio; x <= cellx + radio; x++) {
-        for (int z = cellz - radio; z <= cellz + radio; z++) {
-            Coordenada coord = {x, z};
-            // Usamos la informacion REAL del modelo, no la funcion raw connectRight
-            if (tempModels.count({x+1, z}) && tempModels[coord]->doorData.count(0)) {
-                DoorPoints p1 = tempModels[coord]->doorData[0], p2 = tempModels[{x+1, z}]->doorData[1];
-                p2.infIzq.x += escala; p2.supIzq.x += escala; p2.infDer.x += escala; p2.supDer.x += escala;
-                tempModels[coord]->generateCorridor(p1, p2);
-            }
-            if (tempModels.count({x, z+1}) && tempModels[coord]->doorData.count(2)) {
-                DoorPoints p1 = tempModels[coord]->doorData[2], p2 = tempModels[{x, z+1}]->doorData[3];
-                p2.infIzq.z += escala; p2.supIzq.z += escala; p2.infDer.z += escala; p2.supDer.z += escala;
-                tempModels[coord]->generateCorridor(p1, p2);
-            }
-            // FASE 3: Subir a GPU
-            if (mundialMap.find(coord) == mundialMap.end()) {
-                tempModels[coord]->updatePointers();
-                Paint* newRoom = new Paint("pared.jpg", wallShader, wallTexture);
-                newRoom->configBuffers(*tempModels[coord]);
-                mundialMap[coord] = newRoom;
-            }
-            mundialMap[coord]->draw(glm::vec3(x * escala, 0.0f, z * escala));
-        }
-    }
-
-    // Limpieza de punteros segura (C++11 compatible)
-    for (auto const& it : tempModels) {
-        delete it.second;
-    }
-
-    static int cleanup = 0;
-    if (++cleanup > 400) {
-        cleanup = 0;
-        for (auto it = mundialMap.begin(); it != mundialMap.end(); ) {
-            if (abs(it->first.x - cellx) > 5 || abs(it->first.z - cellz) > 5) {
-                delete it->second; it = mundialMap.erase(it);
-            } else ++it;
-        }
-    }
-}
-// ... resto de funciones (start, mouse_callback, etc.) ...
-
+// Implementación de Input y Callbacks
 void processKeyboardInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) cam.updatePos(FORWARD, dt);
@@ -150,15 +85,19 @@ GLFWwindow *start(int width, int height, const char* title) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
     GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
     if (!window) return nullptr;
+
     glfwMakeContextCurrent(window);
     glfwSetCursorPosCallback(window, mouse_callback);
+    
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) return nullptr;
+
     glViewport(0, 0, width, height);
     glEnable(GL_DEPTH_TEST);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSwapInterval(1);
+    glfwSwapInterval(1); // V-Sync activo para evitar parpadeos
     return window;
 }
 
