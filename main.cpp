@@ -5,26 +5,17 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 #include "paint.h"
 #include "camera.h"
 #include "model.h"
+#include "chunkLoader.h"
 
-int SCR_WIDTH = 800;
-int SCR_HEIGHT = 800;
-
-bool firstMouse = true;
-float xlast = 0, ylast = 0, dt = 0, lastFrame = 0;
-
-// Declaraciones
+int SCR_WIDTH = 800; int SCR_HEIGHT = 800;
+bool firstMouse = true; float xlast = 0, ylast = 0, dt = 0, lastFrame = 0;
 GLFWwindow *start(int width, int height, const char* title);
 void processKeyboardInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void loadChunk(GLFWwindow *window);
-
-// Funciones externas definidas en model.cpp
-bool connectRight(int x, int z);
-bool connectUp(int x, int z);
 
 struct Coordenada {
     int x, z;
@@ -34,52 +25,64 @@ struct Coordenada {
     }
 };
 
-struct RoomSize { float w, d; };
-
 std::map<Coordenada, Paint*> mundialMap; 
-std::map<Coordenada, RoomSize> roomSizes;
-
-Camera cam;
-Shader* wallShader;
-Texture* wallTexture;
+Camera cam; Shader* wallShader; Texture* wallTexture;
 
 int main() {   
-    GLFWwindow* window = start(SCR_WIDTH, SCR_HEIGHT, "Backrooms - Rescate Final");
+    GLFWwindow* window = start(SCR_WIDTH, SCR_HEIGHT, "Backrooms - 2 Doors Min");
     if (!window) return -1;
-
     wallShader = new Shader("3.3.shader.vs", "3.3.shader.fs");
     wallTexture = new Texture("pared.jpg", wallShader);
+    chunkLoader *chunki = new chunkLoader(wallShader, wallTexture, cam);
 
     while(!glfwWindowShouldClose(window)) {
-        float currentFrame = glfwGetTime();
-        dt = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        float currentFrame = glfwGetTime(); dt = currentFrame - lastFrame; lastFrame = currentFrame;
+        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         wallShader->use();
         glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/SCR_HEIGHT, 0.1f, 1000.0f);
         wallShader->setMat4("projection", proj);
         wallShader->setMat4("view", cam.getViewMatrix());
-
         loadChunk(window);
         processKeyboardInput(window);
-
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    delete chunki;
+
     return 0;
 }
 
 void loadChunk(GLFWwindow *window) {
-    float escala = 45.0f; 
-    int cellx = (int)floor(cam.position.x / escala);
-    int cellz = (int)floor(cam.position.z / escala);
-    int radio = 2;
+    float escala = 45.0f;
+    int cellx = (int)floor(cam.position.x / escala), cellz = (int)floor(cam.position.z / escala), radio = 2;
 
-    // 1. Generamos modelos temporales para el área actual
+    static int lastCellX = -99999, lastCellZ = -99999;
+    if (lastCellX != -99999) {
+        if (cellx > lastCellX) {
+             int badX = lastCellX + radio;
+             for (auto it = mundialMap.begin(); it != mundialMap.end(); ) {
+                 if (it->first.x == badX) {
+                     delete it->second;
+                     it = mundialMap.erase(it);
+                 } else ++it;
+             }
+        }
+        if (cellz > lastCellZ) {
+             int badZ = lastCellZ + radio;
+             for (auto it = mundialMap.begin(); it != mundialMap.end(); ) {
+                 if (it->first.z == badZ) {
+                     delete it->second;
+                     it = mundialMap.erase(it);
+                 } else ++it;
+             }
+        }
+    }
+    lastCellX = cellx; lastCellZ = cellz;
+
     std::map<Coordenada, Model*> tempModels;
+
+    // FASE 1: Crear modelos lógicos
     for (int x = cellx - radio; x <= cellx + radio; x++) {
         for (int z = cellz - radio; z <= cellz + radio; z++) {
             Coordenada c = {x, z};
@@ -89,75 +92,48 @@ void loadChunk(GLFWwindow *window) {
         }
     }
 
-    // 2. Conectamos los pasillos
+    // FASE 2: Conectar
     for (int x = cellx - radio; x <= cellx + radio; x++) {
         for (int z = cellz - radio; z <= cellz + radio; z++) {
             Coordenada coord = {x, z};
-            
-            // Pasillo a la derecha (+X)
-            if (connectRight(x, z)) {
-                Coordenada vecino = {x + 1, z};
-                if (tempModels.count(vecino)) {
-                    DoorPoints p1 = tempModels[coord]->doorData[0];
-                    DoorPoints p2 = tempModels[vecino]->doorData[1];
-                    
-                    // Proyectamos p2 a la posición relativa del vecino
-                    p2.infIzq.x += escala; p2.supIzq.x += escala;
-                    p2.infDer.x += escala; p2.supDer.x += escala;
-                    
-                    tempModels[coord]->generateCorridor(p1, p2);
-                }
+            // Usamos la informacion REAL del modelo, no la funcion raw connectRight
+            if (tempModels.count({x+1, z}) && tempModels[coord]->doorData.count(0)) {
+                DoorPoints p1 = tempModels[coord]->doorData[0], p2 = tempModels[{x+1, z}]->doorData[1];
+                p2.infIzq.x += escala; p2.supIzq.x += escala; p2.infDer.x += escala; p2.supDer.x += escala;
+                tempModels[coord]->generateCorridor(p1, p2);
             }
-
-            // Pasillo arriba (+Z)
-            if (connectUp(x, z)) {
-                Coordenada vecino = {x, z + 1};
-                if (tempModels.count(vecino)) {
-                    DoorPoints p1 = tempModels[coord]->doorData[2];
-                    DoorPoints p2 = tempModels[vecino]->doorData[3];
-                    
-                    p2.infIzq.z += escala; p2.supIzq.z += escala;
-                    p2.infDer.z += escala; p2.supDer.z += escala;
-                    
-                    tempModels[coord]->generateCorridor(p1, p2);
-                }
+            if (tempModels.count({x, z+1}) && tempModels[coord]->doorData.count(2)) {
+                DoorPoints p1 = tempModels[coord]->doorData[2], p2 = tempModels[{x, z+1}]->doorData[3];
+                p2.infIzq.z += escala; p2.supIzq.z += escala; p2.infDer.z += escala; p2.supDer.z += escala;
+                tempModels[coord]->generateCorridor(p1, p2);
             }
-
-            // 3. Renderizado y subida a GPU
+            // FASE 3: Subir a GPU
             if (mundialMap.find(coord) == mundialMap.end()) {
-                tempModels[coord]->updatePointers(); 
+                tempModels[coord]->updatePointers();
                 Paint* newRoom = new Paint("pared.jpg", wallShader, wallTexture);
                 newRoom->configBuffers(*tempModels[coord]);
                 mundialMap[coord] = newRoom;
-                roomSizes[coord] = { (float)tempModels[coord]->w, (float)tempModels[coord]->d };
             }
-
             mundialMap[coord]->draw(glm::vec3(x * escala, 0.0f, z * escala));
         }
     }
 
-    // Limpieza de modelos lógicos temporales
-    for (std::map<Coordenada, Model*>::iterator it = tempModels.begin(); it != tempModels.end(); ++it) {
-        delete it->second;
+    // Limpieza de punteros segura (C++11 compatible)
+    for (auto const& it : tempModels) {
+        delete it.second;
     }
 
-    // Fase de limpieza de memoria mundial (lejanía)
-    static int frameCounter = 0;
-    if (++frameCounter > 500) {
-        frameCounter = 0;
+    static int cleanup = 0;
+    if (++cleanup > 400) {
+        cleanup = 0;
         for (auto it = mundialMap.begin(); it != mundialMap.end(); ) {
-            int dx = abs(it->first.x - cellx);
-            int dz = abs(it->first.z - cellz);
-            if (dx > 4 || dz > 4) {
-                delete it->second; 
-                roomSizes.erase(it->first);
-                it = mundialMap.erase(it);
-            } else {
-                ++it;
-            }
+            if (abs(it->first.x - cellx) > 5 || abs(it->first.z - cellz) > 5) {
+                delete it->second; it = mundialMap.erase(it);
+            } else ++it;
         }
     }
 }
+// ... resto de funciones (start, mouse_callback, etc.) ...
 
 void processKeyboardInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
