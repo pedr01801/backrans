@@ -22,19 +22,15 @@ enum State {
 
 class Camera {
     public:
-        //Configuración shader
         Shader *shader;
 
-        //Vectores
         glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
         glm::vec3 right;
         
-        //Matrices
         glm::mat4 view;
 
-        //Variables auxiliares
         float SENSIVILITY = 0.1f;
         float yaw = 90.0f;
         float pitch = 0.0f;
@@ -97,4 +93,4 @@ class Camera {
         }
 };
 
-#endif // CAMERA_H
+#endif

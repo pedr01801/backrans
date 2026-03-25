@@ -14,35 +14,28 @@
 int SCR_WIDTH = 800; int SCR_HEIGHT = 800;
 bool firstMouse = true; float xlast = 0, ylast = 0, dt = 0, lastFrame = 0;
 
-// Declaraciones de funciones de GLFW
 GLFWwindow *start(int width, int height, const char* title);
 void processKeyboardInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
-// Variables globales necesarias para la cámara y el renderizado básico
 Camera cam; 
 Shader* wallShader; 
 Texture* wallTexture;
 
 int main() {   
-    // Inicialización de ventana
-    GLFWwindow* window = start(SCR_WIDTH, SCR_HEIGHT, "Backrooms - ChunkLoader Class");
+    GLFWwindow* window = start(SCR_WIDTH, SCR_HEIGHT, "Backrans");
     if (!window) return -1;
 
-    // Carga de recursos
     wallShader = new Shader("3.3.shader.vs", "3.3.shader.fs");
     wallTexture = new Texture("pared.jpg", wallShader);
 
-    // INSTANCIA DE LA CLASE: Aquí creamos el gestor de niveles
     chunkLoader *chunki = new chunkLoader(wallShader, wallTexture);
 
     while(!glfwWindowShouldClose(window)) {
-        // Cálculo del Delta Time
         float currentFrame = glfwGetTime(); 
         dt = currentFrame - lastFrame; 
         lastFrame = currentFrame;
 
-        // Renderizado
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -51,8 +44,6 @@ int main() {
         wallShader->setMat4("projection", proj);
         wallShader->setMat4("view", cam.getViewMatrix());
 
-        // --- USO DE LA CLASE ---
-        // Llamamos al método de la clase pasando la cámara actual
         chunki->loadChunk(window, cam);
 
         processKeyboardInput(window);
@@ -60,7 +51,6 @@ int main() {
         glfwPollEvents();
     }
 
-    // Limpieza
     delete chunki;
     delete wallShader;
     delete wallTexture;
@@ -69,7 +59,6 @@ int main() {
     return 0;
 }
 
-// Implementación de Input y Callbacks
 void processKeyboardInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) cam.updatePos(FORWARD, dt);
@@ -97,7 +86,7 @@ GLFWwindow *start(int width, int height, const char* title) {
     glViewport(0, 0, width, height);
     glEnable(GL_DEPTH_TEST);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSwapInterval(1); // V-Sync activo para evitar parpadeos
+    glfwSwapInterval(1);
     return window;
 }
 

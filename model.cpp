@@ -30,7 +30,6 @@ bool shouldForceRight(int x, int z) {
     bool u = connectUp(x, z);
     bool d = connectUp(x, z - 1);
     int count = (r ? 1 : 0) + (l ? 1 : 0) + (u ? 1 : 0) + (d ? 1 : 0);
-    // Si hay menos de 2 puertas y la derecha ta cerrada, la forzamos
     if (count < 2 && !r) return true;
     return false;
 }
@@ -42,10 +41,8 @@ bool shouldForceUp(int x, int z) {
     bool d = connectUp(x, z - 1);
     int count = (r ? 1 : 0) + (l ? 1 : 0) + (u ? 1 : 0) + (d ? 1 : 0);
 
-    // Simular el forzado de derecha para ver el count real
     if (count < 2 && !r) count++;
     
-    // Si sigue habiendo menos de 2 y arriba ta cerrada, la forzamos
     if (count < 2 && !u) return true;
     return false;
 }
@@ -57,26 +54,19 @@ void Model::processSeed(int n, int cellx, int cellz) {
     h = 10.0f;
     d = sd.generateSeed(30, 40);
 
-    // 1. Determinar puertas (CONSISTENTE CON VECINOS)
     bool door[4];
-    // Una puerta existe si el hash lo dice O si el cuarto correspondiente (este o el vecino) la fuerza
-    // Door 0 (Right): Yo fuerzo derecha?
     door[0] = connectRight(cellx, cellz)     || shouldForceRight(cellx, cellz);
     
-    // Door 1 (Left): El vecino de la izquierda (cellx-1) fuerza su derecha?
     door[1] = connectRight(cellx - 1, cellz) || shouldForceRight(cellx - 1, cellz);
     
-    // Door 2 (Up): Yo fuerzo arriba?
     door[2] = connectUp(cellx, cellz)        || shouldForceUp(cellx, cellz);
     
-    // Door 3 (Down): El vecino de abajo (cellz-1) fuerza su arriba?
     door[3] = connectUp(cellx, cellz - 1)    || shouldForceUp(cellx, cellz - 1);
 
     local_vertices.clear();
     local_indices.clear();
     doorData.clear();
 
-    // 2. Generación de Paredes/Suelo/Techo
     for (int i = 0; i < 6; i++) {
         unsigned int offset = local_vertices.size() / 5;
         if (i < 4 && door[i]) {

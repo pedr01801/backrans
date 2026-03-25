@@ -29,7 +29,6 @@ public:
     void processSeed(int seed, int cellx, int cellz);
     void Model::generateCorridor(DoorPoints& p1, DoorPoints& p2);
 
-    // Agrega esto para poder refrescar los punteros después de añadir el pasillo
     void updatePointers() {
         vertices = local_vertices.data();
         indices = local_indices.data();

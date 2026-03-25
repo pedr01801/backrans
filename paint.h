@@ -34,16 +34,14 @@ class Paint {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, room.sizeIndices, room.indices, GL_STATIC_DRAW);
 
-            // Atributo 0: Posición (x, y, z)
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
             glEnableVertexAttribArray(0);
 
-            // Atributo 1: UVs (u, v)
             glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
 
             cant = room.indicesAmount;
-            glBindVertexArray(0); // Desvincular para evitar cambios accidentales
+            glBindVertexArray(0); 
         } 
 
         void draw(glm::vec3 pos, float rot = 0.0f) {
