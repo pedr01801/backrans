@@ -1,9 +1,17 @@
-.vs/
-out/
-build/
-bin/
-obj/
-*.sln
-*.vcxproj
-*.user
-x64/
+# Variables de entorno (¡MUY IMPORTANTE!)
+.env
+.env.local
+.env.development.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
