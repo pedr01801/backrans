@@ -150,7 +150,8 @@ public:
             for (int z = cellz - radio; z <= cellz + radio; z++) {
                 Coordenada coord = {x, z};
                 
-                if (mundialMap.find(coord) == mundialMap.end()) {
+                if (mundialMap.find(coord) == mundialMap.end()) 
+                {
                     if (tempModels.count({x+1, z}) && tempModels[coord]->doorData.count(0)) {
                         DoorPoints p1 = tempModels[coord]->doorData[0], p2 = tempModels[{x+1, z}]->doorData[1];
                         //Sumamos la escala a los vertices de la puerta del vecino 
@@ -182,12 +183,16 @@ public:
         }
     
         static int cleanupCounter = 0;
-        if (++cleanupCounter > 60) {
+        if (++cleanupCounter > 60) 
+        {
             cleanupCounter = 0;
-            for (auto it = mundialMap.begin(); it != mundialMap.end(); ) {
-                if (abs(it->first.x - cellx) > 3 || abs(it->first.z - cellz) > 3) {
+            for (auto it = mundialMap.begin(); it != mundialMap.end(); ) 
+            {
+                if (abs(it->first.x - cellx) > 3 || abs(it->first.z - cellz) > 3) 
+                {
                     returnPaint(it->second);
-                    if (dataMap.count(it->first)) {
+                    if (dataMap.count(it->first)) 
+                    {
                         returnModel(dataMap[it->first]);
                         dataMap.erase(it->first);
                     }

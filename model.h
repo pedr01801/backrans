@@ -28,15 +28,15 @@ public:
     Model();
     void processSeed(int seed, int cellx, int cellz);
     void Model::generateCorridor(DoorPoints& p1, DoorPoints& p2);
-    void addPlainSurface(int face, float w, float h, float d, unsigned int offset);
-    void addDoorSurface(int face, float w, float h, float d, unsigned int offset);
+    void addPlainSurface(int face, int w, int h, int d, unsigned int offset);
+    void addDoorSurface(int face, int w, int h, int d, unsigned int offset);
 
     void updatePointers() {
         vertices = local_vertices.data();
         indices = local_indices.data();
         sizeVertices = local_vertices.size() * sizeof(float);
         sizeIndices = local_indices.size() * sizeof(unsigned int);
-        indicesAmount = local_indices.size();
+        indicesAmount = (int)local_indices.size();
     }
 
     void reset();

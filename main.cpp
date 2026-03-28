@@ -36,7 +36,7 @@ int main() {
     wallShader->setMat4("projection", proj);
 
     while(!glfwWindowShouldClose(window)) {
-        float currentFrame = glfwGetTime(); 
+        float currentFrame = (float) glfwGetTime(); 
         dt = currentFrame - lastFrame; 
         lastFrame = currentFrame;
 

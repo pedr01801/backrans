@@ -86,7 +86,7 @@ bool shouldForceUp(int x, int z) {
 void Model::processSeed(int n, int cellx, int cellz) {
     std::srand(n);
     Seeder sd;
-    h = 10.0f;
+    h = 10;
     w = sd.generateSeed(30, 40);
     d = sd.generateSeed(30, 40);
 
@@ -104,7 +104,7 @@ void Model::processSeed(int n, int cellx, int cellz) {
     doorData.clear();
 
     for (int i = 0; i < 6; i++) {
-        unsigned int offset = local_vertices.size() / 5;
+        unsigned int offset = (int) local_vertices.size() / 5;
         if (i < 4 && door[i])
         {
             addDoorSurface(i, w, h, d, offset);
@@ -117,7 +117,7 @@ void Model::processSeed(int n, int cellx, int cellz) {
     updatePointers();
 }
 
-void Model::addDoorSurface(int face, float w, float h, float d, unsigned int offset) 
+void Model::addDoorSurface(int face, int w, int h, int d, unsigned int offset) 
 {
     DoorPoints points;
     float doorH = 0.6f * h; 
@@ -138,12 +138,16 @@ void Model::addDoorSurface(int face, float w, float h, float d, unsigned int off
         points.infDer = glm::vec3( 0.2f * w, 0.0f, wz);
         points.supDer = glm::vec3( 0.2f * w, doorH, wz);
     }
+
     doorData[face] = points;
 
     for (int j = 0; j < 12; j++) 
     {
+        //Coordenadas locales
         float lx = marco[j*5];
         float ly = marco[j*5+1];
+
+        //Componentes del vértice
         float vx, vy, vz, u, v;
 
         vy = (ly + 0.5f) * h;
@@ -183,48 +187,52 @@ void Model::addDoorSurface(int face, float w, float h, float d, unsigned int off
     }
 }
 
-void Model::addPlainSurface(int face, float w, float h, float d, unsigned int offset) 
+void Model::addPlainSurface(int face, int w, int h, int d, unsigned int offset) 
 {
     for (int j = 0; j < 4; j++) 
     {
+        //coordenadas locales
         float lx = (j == 1 || j == 2) ? 0.5f : -0.5f;
         float ly = (j == 2 || j == 3) ? 0.5f : -0.5f;
-        float vx, vy, vz, u, v;
+        
+        //componentes del vértice (vx, vy, vz, u, v)
+        float vx, vy, vz; //coordenadas
+        float u, v;       //textura  
 
-        if (face == 0)      
+        if (face == 0)      //derecha      
         { 
             vx =  w/2.0f; 
             vy = (ly+0.5f)*h; 
             vz =  lx*d; 
         }
-        else if (face == 1) 
+        else if (face == 1) //izquierda
         { 
             vx = -w/2.0f; 
             vy = (ly+0.5f)*h; 
             vz = -lx*d; 
         }
-        else if (face == 2) 
+        else if (face == 2) //frente
         { 
             vx = -lx*w;   
             vy = (ly+0.5f)*h; 
             vz =  d/2.0f; 
         }
-        else if (face == 3) 
+        else if (face == 3) //atrás
         { 
             vx =  lx*w;   
             vy = (ly+0.5f)*h; 
             vz = -d/2.0f; 
         }
-        else if (face == 4) 
+        else if (face == 4) //suelo
         { 
             vx =  lx*w;   
             vy = 0.0f;        
             vz =  ly*d; 
         }
-        else                
+        else                //techo
         { 
             vx =  lx*w;   
-            vy = h;           
+            vy = (float) h;    
             vz =  ly*d; 
         }
 
@@ -246,7 +254,7 @@ void Model::addPlainSurface(int face, float w, float h, float d, unsigned int of
 
 
 void Model::generateCorridor(DoorPoints& p1, DoorPoints& p2) {
-    unsigned int offset = local_vertices.size() / 5;
+    unsigned int offset = (int) local_vertices.size() / 5;
 
     float widhtP1 = std::abs(p1.infIzq.x - p1.infDer.x);
     float depthP1 = std::abs(p1.infIzq.z - p1.infDer.z);
