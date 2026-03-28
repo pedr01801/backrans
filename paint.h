@@ -64,6 +64,10 @@ class Paint {
             glDeleteBuffers(1, &VBO);
             glDeleteBuffers(1, &EBO);
         }
+
+        void reset() {
+            cant = 0;  
+        }
 };
 
 #endif
